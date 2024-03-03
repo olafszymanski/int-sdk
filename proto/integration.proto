@@ -58,7 +58,7 @@ message Odds {
 
 message Outcome {
     string name = 1;
-    double points = 2;
+    optional double points = 2;
     Odds odds = 3;
     bool is_available = 4;
 }
