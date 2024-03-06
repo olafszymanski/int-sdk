@@ -64,7 +64,7 @@ message Outcome {
 }
 
 message Market {
-    MarketType type = 1;
+    optional MarketType type = 1;
     repeated Outcome outcomes = 2;
     bool is_available = 3;
 }
