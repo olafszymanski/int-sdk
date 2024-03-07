@@ -30,7 +30,7 @@ func (m *MemoryStorage) GetAny(key string) (any, error) {
 	if time.Now().Unix() < v.ttl {
 		delete(m.storage, key)
 	}
-	return v, nil
+	return v.value, nil
 }
 
 func (m *MemoryStorage) StoreAny(key string, value any, ttl int64) error {
