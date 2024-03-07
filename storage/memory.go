@@ -16,7 +16,7 @@ type MemoryStorage struct {
 	storage map[string]*item
 }
 
-func NewMemory() Storager {
+func NewMemoryStorage() Storager {
 	return &MemoryStorage{
 		storage: make(map[string]*item),
 	}
