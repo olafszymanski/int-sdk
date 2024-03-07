@@ -27,16 +27,16 @@ func (m *MemoryStorage) GetAny(key string) (any, error) {
 	if !ok {
 		return nil, ErrNotFound
 	}
-	if time.Now().Unix() < int64(v.ttl) {
+	if time.Now().Unix() < v.ttl {
 		delete(m.storage, key)
 	}
 	return v, nil
 }
 
-func (m *MemoryStorage) StoreAny(key string, value any, ttl uint) error {
+func (m *MemoryStorage) StoreAny(key string, value any, ttl int64) error {
 	m.storage[key] = &item{
 		value: value,
-		ttl:   time.Now().Unix() + int64(ttl),
+		ttl:   time.Now().Unix() + ttl,
 	}
 	return nil
 }
