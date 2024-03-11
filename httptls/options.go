@@ -1,4 +1,4 @@
-package client
+package httptls
 
 import "github.com/Danny-Dasilva/CycleTLS/cycletls"
 
