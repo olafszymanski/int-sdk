@@ -40,23 +40,22 @@ func (c *HTTPClient) do(url, method string, options ...func(*cycletls.Options)) 
 	}
 
 	t := time.Now()
-	res, err := c.client.Do(
+	r, err := c.client.Do(
 		url,
 		opts,
 		method,
 	)
 	tt := time.Since(t)
 
-	r := &Response{
-		Status:    res.Status,
-		Body:      []byte(res.Body),
-		Headers:   res.Headers,
+	res := &Response{
+		Status:    r.Status,
+		Body:      []byte(r.Body),
+		Headers:   r.Headers,
 		TimeTaken: tt,
 	}
 
 	if err != nil {
-		return r, err
+		return res, err
 	}
-
-	return r, nil
+	return res, nil
 }
