@@ -50,10 +50,10 @@ enum MarketType {
 
 message Odds {
     double decimal = 1;
-    string numerator = 2;
-    string denominator = 3;
-    string american = 4;
-    bool is_available = 5;
+    string american = 2;
+    string numerator = 3;
+    string denominator = 4;
+    bool is_fixed = 5;
 }
 
 message Outcome {
@@ -66,7 +66,6 @@ message Outcome {
 message Market {
     optional MarketType type = 1;
     repeated Outcome outcomes = 2;
-    bool is_available = 3;
 }
 
 message Participant {
@@ -82,4 +81,5 @@ message Event {
     google.protobuf.Timestamp start_time = 5;
     repeated Participant participants = 6;
     repeated Market markets = 7;
+    optional string link = 8;
 }
