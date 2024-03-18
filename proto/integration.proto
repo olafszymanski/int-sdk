@@ -21,12 +21,6 @@ enum SportType {
     BASKETBALL = 0;
 }
 
-enum ParticipantType {
-    HOME = 0;
-    AWAY = 1;
-    COMPETITOR = 2;
-}
-
 enum MarketType {
     MONEYLINE = 0;
     MONEYLINE_1ST_QUARTER = 1;
@@ -69,7 +63,13 @@ message Market {
 }
 
 message Participant {
-    ParticipantType type = 1;
+    enum ParticipantType {
+        HOME = 0;
+        AWAY = 1;
+        COMPETITOR = 2;
+    }
+
+    optional ParticipantType type = 1;
     string name = 2;
 }
 
