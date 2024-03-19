@@ -51,10 +51,22 @@ message Odds {
 }
 
 message Outcome {
-    string name = 1;
-    optional double points = 2;
-    Odds odds = 3;
-    bool is_available = 4;
+    enum OutcomeType {
+        HOME = 0;
+        AWAY = 1;
+        DRAW = 2;
+        COMPETITOR = 3;
+        OVER = 4;
+        UNDER = 5;
+        ODD = 6;
+        EVEN = 7;
+    }
+
+    optional OutcomeType type = 1;
+    string name = 2;
+    optional double points = 3;
+    Odds odds = 4;
+    bool is_available = 5;
 }
 
 message Market {
