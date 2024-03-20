@@ -75,15 +75,15 @@ message Outcome {
     }
 
     optional OutcomeType type = 1;
-    string name = 2;
-    optional double points = 3;
-    Odds odds = 4;
-    bool is_available = 5;
+    optional double points = 2;
+    Odds odds = 3;
+    bool is_available = 4;
 }
 
 message Market {
     optional MarketType type = 1;
-    repeated Outcome outcomes = 2;
+    optional string name = 2;
+    repeated Outcome outcomes = 3;
 }
 
 message Participant {
