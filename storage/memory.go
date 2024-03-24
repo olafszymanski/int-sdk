@@ -1,42 +1,44 @@
 package storage
 
 import (
-	"fmt"
+	"context"
 	"time"
 )
 
-var ErrNotFound = fmt.Errorf("key not found")
-
 type item struct {
-	value any
+	value []byte
 	ttl   int64
 }
 
-type MemoryStorage struct {
+type memoryStorage struct {
 	storage map[string]*item
 }
 
 func NewMemoryStorage() Storager {
-	return &MemoryStorage{
+	return &memoryStorage{
 		storage: make(map[string]*item),
 	}
 }
 
-func (m *MemoryStorage) GetAny(key string) (any, error) {
-	v, ok := m.storage[key]
+func (s *memoryStorage) Get(_ context.Context, key string) ([]byte, error) {
+	v, ok := s.storage[key]
 	if !ok {
 		return nil, ErrNotFound
 	}
 	if time.Now().Unix() < v.ttl {
-		delete(m.storage, key)
+		delete(s.storage, key)
 	}
 	return v.value, nil
 }
 
-func (m *MemoryStorage) StoreAny(key string, value any, ttl int64) error {
-	m.storage[key] = &item{
+func (s *memoryStorage) Store(_ context.Context, key string, value []byte, expiration time.Duration) error {
+	var ttl int64 = -1
+	if expiration != 0 {
+		ttl = time.Now().Add(expiration).Unix()
+	}
+	s.storage[key] = &item{
 		value: value,
-		ttl:   time.Now().Unix() + ttl,
+		ttl:   ttl,
 	}
 	return nil
 }
