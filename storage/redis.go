@@ -47,3 +47,27 @@ func (s *redisStorage) Store(ctx context.Context, key string, value []byte, expi
 	}
 	return nil
 }
+
+func (s *redisStorage) GetHashAll(ctx context.Context, hash string) (map[string][]byte, error) {
+	res, err := s.client.HGetAll(ctx, hash).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return nil, fmt.Errorf("%w: %v", ErrNotFound, err)
+		}
+		return nil, fmt.Errorf("%w: %v", ErrGet, err)
+	}
+	r := make(map[string][]byte, len(res))
+	for k, v := range res {
+		r[k] = []byte(v)
+	}
+	return r, nil
+}
+
+// If expiration is 0, the key will not expire.
+func (s *redisStorage) StoreHash(ctx context.Context, hash string, values map[string]any) error {
+	_, err := s.client.HSet(ctx, hash, values).Result()
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrStore, err)
+	}
+	return nil
+}
