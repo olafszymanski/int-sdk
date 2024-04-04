@@ -1,9 +1,13 @@
 package httptls
 
-import "github.com/Danny-Dasilva/CycleTLS/cycletls"
+import (
+	"time"
 
-func WithTimeout(timeout int) func(*cycletls.Options) {
+	"github.com/Danny-Dasilva/CycleTLS/cycletls"
+)
+
+func WithTimeout(timeout time.Duration) func(*cycletls.Options) {
 	return func(o *cycletls.Options) {
-		o.Timeout = timeout
+		o.Timeout = int(timeout)
 	}
 }
