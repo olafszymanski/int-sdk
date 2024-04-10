@@ -9,8 +9,10 @@ import (
 )
 
 var (
-	ErrGet   = fmt.Errorf("could not get key")
-	ErrStore = fmt.Errorf("could not store key")
+	ErrGet       = fmt.Errorf("could not get key")
+	ErrStore     = fmt.Errorf("could not store key")
+	ErrGetHash   = fmt.Errorf("could not get all hash keys")
+	ErrStoreHash = fmt.Errorf("could not store hash key")
 )
 
 type redisStorage struct {
@@ -54,7 +56,7 @@ func (s *redisStorage) GetHashAll(ctx context.Context, hash string) (map[string]
 		if err == redis.Nil {
 			return nil, fmt.Errorf("%w: %v", ErrNotFound, err)
 		}
-		return nil, fmt.Errorf("%w: %v", ErrGet, err)
+		return nil, fmt.Errorf("%w: %v", ErrGetHash, err)
 	}
 	r := make(map[string][]byte, len(res))
 	for k, v := range res {
@@ -67,7 +69,7 @@ func (s *redisStorage) GetHashAll(ctx context.Context, hash string) (map[string]
 func (s *redisStorage) StoreHash(ctx context.Context, hash string, values map[string]any) error {
 	_, err := s.client.HSet(ctx, hash, values).Result()
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrStore, err)
+		return fmt.Errorf("%w: %v", ErrStoreHash, err)
 	}
 	return nil
 }

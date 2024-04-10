@@ -68,6 +68,9 @@ func (s *memoryStorage) StoreHash(_ context.Context, hash string, values map[str
 	s.hashStorageMutex.Lock()
 	defer s.hashStorageMutex.Unlock()
 
+	if _, ok := s.hashStorage[hash]; !ok {
+		s.hashStorage[hash] = make(map[string][]byte, len(values))
+	}
 	for k, v := range values {
 		s.hashStorage[hash][k] = v.([]byte)
 	}
