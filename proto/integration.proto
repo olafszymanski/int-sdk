@@ -105,7 +105,8 @@ message Event {
     string name = 4;
     string league = 5;
     google.protobuf.Timestamp start_time = 6;
-    repeated Participant participants = 7;
-    repeated Market markets = 8;
-    optional string link = 9;
+    bool is_live = 7;
+    repeated Participant participants = 8;
+    repeated Market markets = 9;
+    optional string link = 10;
 }
