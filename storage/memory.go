@@ -57,28 +57,39 @@ func (s *memoryStorage) Store(_ context.Context, key string, value []byte, expir
 	return nil
 }
 
-func (s *memoryStorage) GetHash(_ context.Context, hash, field string) ([]byte, error) {
+func (s *memoryStorage) GetHashField(_ context.Context, hash, field string) ([]byte, error) {
 	s.hashStorageMutex.RLock()
 	defer s.hashStorageMutex.RUnlock()
 
 	return s.hashStorage[hash][field], nil
 }
 
-func (s *memoryStorage) GetHashAll(_ context.Context, hash string) (map[string][]byte, error) {
+func (s *memoryStorage) StoreHashField(_ context.Context, hash string, field string, value []byte) error {
+	s.hashStorageMutex.Lock()
+	defer s.hashStorageMutex.Unlock()
+
+	if _, ok := s.hashStorage[hash]; !ok {
+		s.hashStorage[hash] = make(map[string][]byte, 1)
+	}
+	s.hashStorage[hash][field] = value
+	return nil
+}
+
+func (s *memoryStorage) GetHashFields(_ context.Context, hash string) (map[string][]byte, error) {
 	s.hashStorageMutex.RLock()
 	defer s.hashStorageMutex.RUnlock()
 
 	return s.hashStorage[hash], nil
 }
 
-func (s *memoryStorage) StoreHash(_ context.Context, hash string, values map[string][]byte) error {
+func (s *memoryStorage) StoreHashFields(_ context.Context, hash string, fields map[string][]byte) error {
 	s.hashStorageMutex.Lock()
 	defer s.hashStorageMutex.Unlock()
 
 	if _, ok := s.hashStorage[hash]; !ok {
-		s.hashStorage[hash] = make(map[string][]byte, len(values))
+		s.hashStorage[hash] = make(map[string][]byte, len(fields))
 	}
-	for k, v := range values {
+	for k, v := range fields {
 		s.hashStorage[hash][k] = v
 	}
 	return nil

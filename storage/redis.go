@@ -2,17 +2,9 @@ package storage
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/redis/go-redis/v9"
-)
-
-var (
-	ErrGet       = fmt.Errorf("could not get key")
-	ErrStore     = fmt.Errorf("could not store key")
-	ErrGetHash   = fmt.Errorf("could not get all hash keys")
-	ErrStoreHash = fmt.Errorf("could not store hash key")
 )
 
 type redisStorage struct {
@@ -20,6 +12,7 @@ type redisStorage struct {
 }
 
 func NewRedisStorage(address string) Storager {
+	// TODO: fix options
 	c := redis.NewClient(&redis.Options{
 		Addr:     address,
 		Password: "",
@@ -36,7 +29,7 @@ func (s *redisStorage) Get(ctx context.Context, key string) ([]byte, error) {
 		if err == redis.Nil {
 			return nil, ErrNotFound
 		}
-		return nil, fmt.Errorf("%w: %v", ErrGet, err)
+		return nil, err
 	}
 	return r, nil
 }
@@ -45,29 +38,37 @@ func (s *redisStorage) Get(ctx context.Context, key string) ([]byte, error) {
 func (s *redisStorage) Store(ctx context.Context, key string, value []byte, expiration time.Duration) error {
 	_, err := s.client.Set(ctx, key, value, expiration).Result()
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrStore, err)
+		return err
 	}
 	return nil
 }
 
-func (s *redisStorage) GetHash(ctx context.Context, hash, field string) ([]byte, error) {
+func (s *redisStorage) GetHashField(ctx context.Context, hash, field string) ([]byte, error) {
 	r, err := s.client.HGet(ctx, hash, field).Bytes()
 	if err != nil {
 		if err == redis.Nil {
 			return nil, ErrNotFound
 		}
-		return nil, fmt.Errorf("%w: %v", ErrGetHash, err)
+		return nil, err
 	}
 	return r, nil
 }
 
-func (s *redisStorage) GetHashAll(ctx context.Context, hash string) (map[string][]byte, error) {
+func (s *redisStorage) StoreHashField(ctx context.Context, hash string, field string, value []byte) error {
+	_, err := s.client.HSet(ctx, hash, field, value).Result()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *redisStorage) GetHashFields(ctx context.Context, hash string) (map[string][]byte, error) {
 	res, err := s.client.HGetAll(ctx, hash).Result()
 	if err != nil {
 		if err == redis.Nil {
 			return nil, ErrNotFound
 		}
-		return nil, fmt.Errorf("%w: %v", ErrGetHash, err)
+		return nil, err
 	}
 	r := make(map[string][]byte, len(res))
 	for k, v := range res {
@@ -76,11 +77,10 @@ func (s *redisStorage) GetHashAll(ctx context.Context, hash string) (map[string]
 	return r, nil
 }
 
-// If expiration is 0, the key will not expire.
-func (s *redisStorage) StoreHash(ctx context.Context, hash string, values map[string][]byte) error {
-	_, err := s.client.HSet(ctx, hash, values).Result()
+func (s *redisStorage) StoreHashFields(ctx context.Context, hash string, fields map[string][]byte) error {
+	_, err := s.client.HSet(ctx, hash, fields).Result()
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrStoreHash, err)
+		return err
 	}
 	return nil
 }
