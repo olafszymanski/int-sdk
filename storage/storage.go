@@ -11,6 +11,7 @@ var ErrNotFound = fmt.Errorf("key not found")
 type Storager interface {
 	Get(ctx context.Context, key string) ([]byte, error)
 	Store(ctx context.Context, key string, value []byte, expiration time.Duration) error
+	GetHash(ctx context.Context, hash string, field string) ([]byte, error)
 	GetHashAll(ctx context.Context, hash string) (map[string][]byte, error)
-	StoreHash(ctx context.Context, hash string, values map[string]any) error
+	StoreHash(ctx context.Context, hash string, values map[string][]byte) error
 }

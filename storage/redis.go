@@ -34,7 +34,7 @@ func (s *redisStorage) Get(ctx context.Context, key string) ([]byte, error) {
 	r, err := s.client.Get(ctx, key).Bytes()
 	if err != nil {
 		if err == redis.Nil {
-			return nil, fmt.Errorf("%w: %v", ErrNotFound, err)
+			return nil, ErrNotFound
 		}
 		return nil, fmt.Errorf("%w: %v", ErrGet, err)
 	}
@@ -50,11 +50,22 @@ func (s *redisStorage) Store(ctx context.Context, key string, value []byte, expi
 	return nil
 }
 
+func (s *redisStorage) GetHash(ctx context.Context, hash, field string) ([]byte, error) {
+	r, err := s.client.HGet(ctx, hash, field).Bytes()
+	if err != nil {
+		if err == redis.Nil {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("%w: %v", ErrGetHash, err)
+	}
+	return r, nil
+}
+
 func (s *redisStorage) GetHashAll(ctx context.Context, hash string) (map[string][]byte, error) {
 	res, err := s.client.HGetAll(ctx, hash).Result()
 	if err != nil {
 		if err == redis.Nil {
-			return nil, fmt.Errorf("%w: %v", ErrNotFound, err)
+			return nil, ErrNotFound
 		}
 		return nil, fmt.Errorf("%w: %v", ErrGetHash, err)
 	}
@@ -66,7 +77,7 @@ func (s *redisStorage) GetHashAll(ctx context.Context, hash string) (map[string]
 }
 
 // If expiration is 0, the key will not expire.
-func (s *redisStorage) StoreHash(ctx context.Context, hash string, values map[string]any) error {
+func (s *redisStorage) StoreHash(ctx context.Context, hash string, values map[string][]byte) error {
 	_, err := s.client.HSet(ctx, hash, values).Result()
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrStoreHash, err)

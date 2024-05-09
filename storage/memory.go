@@ -57,6 +57,13 @@ func (s *memoryStorage) Store(_ context.Context, key string, value []byte, expir
 	return nil
 }
 
+func (s *memoryStorage) GetHash(_ context.Context, hash, field string) ([]byte, error) {
+	s.hashStorageMutex.RLock()
+	defer s.hashStorageMutex.RUnlock()
+
+	return s.hashStorage[hash][field], nil
+}
+
 func (s *memoryStorage) GetHashAll(_ context.Context, hash string) (map[string][]byte, error) {
 	s.hashStorageMutex.RLock()
 	defer s.hashStorageMutex.RUnlock()
@@ -64,7 +71,7 @@ func (s *memoryStorage) GetHashAll(_ context.Context, hash string) (map[string][
 	return s.hashStorage[hash], nil
 }
 
-func (s *memoryStorage) StoreHash(_ context.Context, hash string, values map[string]any) error {
+func (s *memoryStorage) StoreHash(_ context.Context, hash string, values map[string][]byte) error {
 	s.hashStorageMutex.Lock()
 	defer s.hashStorageMutex.Unlock()
 
@@ -72,7 +79,7 @@ func (s *memoryStorage) StoreHash(_ context.Context, hash string, values map[str
 		s.hashStorage[hash] = make(map[string][]byte, len(values))
 	}
 	for k, v := range values {
-		s.hashStorage[hash][k] = v.([]byte)
+		s.hashStorage[hash][k] = v
 	}
 	return nil
 }
