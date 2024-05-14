@@ -54,6 +54,17 @@ func (s *redisStorage) GetHashField(ctx context.Context, hash, field string) ([]
 	return r, nil
 }
 
+func (s *redisStorage) GetHashFieldKeys(ctx context.Context, hash string) ([]string, error) {
+	res, err := s.client.HKeys(ctx, hash).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return res, nil
+}
+
 func (s *redisStorage) StoreHashField(ctx context.Context, hash string, field string, value []byte) error {
 	_, err := s.client.HSet(ctx, hash, field, value).Result()
 	if err != nil {
@@ -79,6 +90,14 @@ func (s *redisStorage) GetHashFields(ctx context.Context, hash string) (map[stri
 
 func (s *redisStorage) StoreHashFields(ctx context.Context, hash string, fields map[string][]byte) error {
 	_, err := s.client.HSet(ctx, hash, fields).Result()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *redisStorage) DeleteHashFields(ctx context.Context, hash string, fields []string) error {
+	_, err := s.client.HDel(ctx, hash, fields...).Result()
 	if err != nil {
 		return err
 	}

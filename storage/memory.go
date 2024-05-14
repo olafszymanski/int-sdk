@@ -64,6 +64,17 @@ func (s *memoryStorage) GetHashField(_ context.Context, hash, field string) ([]b
 	return s.hashStorage[hash][field], nil
 }
 
+func (s *memoryStorage) GetHashFieldKeys(_ context.Context, hash string) ([]string, error) {
+	s.hashStorageMutex.RLock()
+	defer s.hashStorageMutex.RUnlock()
+
+	keys := make([]string, 0, len(s.hashStorage[hash]))
+	for k := range s.hashStorage[hash] {
+		keys = append(keys, k)
+	}
+	return keys, nil
+}
+
 func (s *memoryStorage) StoreHashField(_ context.Context, hash string, field string, value []byte) error {
 	s.hashStorageMutex.Lock()
 	defer s.hashStorageMutex.Unlock()
@@ -91,6 +102,16 @@ func (s *memoryStorage) StoreHashFields(_ context.Context, hash string, fields m
 	}
 	for k, v := range fields {
 		s.hashStorage[hash][k] = v
+	}
+	return nil
+}
+
+func (s *memoryStorage) DeleteHashFields(_ context.Context, hash string, fields []string) error {
+	s.hashStorageMutex.Lock()
+	defer s.hashStorageMutex.Unlock()
+
+	for _, field := range fields {
+		delete(s.hashStorage[hash], field)
 	}
 	return nil
 }
