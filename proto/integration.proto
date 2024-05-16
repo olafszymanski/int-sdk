@@ -74,17 +74,19 @@ message Outcome {
         EVEN = 7;
     }
 
-    optional OutcomeType type = 1;
-    optional string name = 2;
-    optional double points = 3;
-    Odds odds = 4;
-    bool is_available = 5;
+    OutcomeType type = 1;
+    string external_id = 2;
+    optional string name = 3; // optionally used in case type is COMPETITOR
+    optional double points = 4; // optionally used for points markets like total points or spread
+    Odds odds = 5;
+    bool is_available = 6;
 }
 
 message Market {
-    optional MarketType type = 1;
-    optional string name = 2;
-    repeated Outcome outcomes = 3;
+    MarketType type = 1;
+    string external_id = 2;
+    optional string name = 3; // optionally used in case of a player market
+    repeated Outcome outcomes = 4;
 }
 
 message Participant {
@@ -94,13 +96,13 @@ message Participant {
         COMPETITOR = 2;
     }
 
-    optional ParticipantType type = 1;
+    ParticipantType type = 1;
     string name = 2;
 }
 
 message Event {
     string id = 1;
-    optional string external_id = 2;
+    string external_id = 2;
     SportType sport_type = 3;
     string name = 4;
     string league = 5;
@@ -108,5 +110,5 @@ message Event {
     bool is_live = 7;
     repeated Participant participants = 8;
     repeated Market markets = 9;
-    optional string link = 10;
+    string link = 10;
 }
