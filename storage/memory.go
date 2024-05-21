@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 )
@@ -61,16 +62,27 @@ func (s *memoryStorage) GetHashField(_ context.Context, hash, field string) ([]b
 	s.hashStorageMutex.RLock()
 	defer s.hashStorageMutex.RUnlock()
 
-	return s.hashStorage[hash][field], nil
+	h, ok := s.hashStorage[hash]
+	if !ok {
+		return nil, fmt.Errorf("%w: hash not found", ErrNotFound)
+	}
+	if f, ok := h[field]; ok {
+		return f, nil
+	}
+	return nil, fmt.Errorf("%w: field not found", ErrNotFound)
 }
 
 func (s *memoryStorage) GetHashFieldKeys(_ context.Context, hash string) ([]string, error) {
 	s.hashStorageMutex.RLock()
 	defer s.hashStorageMutex.RUnlock()
 
-	keys := make([]string, 0, len(s.hashStorage[hash]))
-	for k := range s.hashStorage[hash] {
-		keys = append(keys, k)
+	h, ok := s.hashStorage[hash]
+	if !ok {
+		return nil, fmt.Errorf("%w: hash not found", ErrNotFound)
+	}
+	keys := make([]string, 0, len(h))
+	for k := range h[hash] {
+		keys = append(keys, fmt.Sprint(k))
 	}
 	return keys, nil
 }
@@ -90,7 +102,11 @@ func (s *memoryStorage) GetHashFields(_ context.Context, hash string) (map[strin
 	s.hashStorageMutex.RLock()
 	defer s.hashStorageMutex.RUnlock()
 
-	return s.hashStorage[hash], nil
+	h, ok := s.hashStorage[hash]
+	if !ok {
+		return nil, fmt.Errorf("%w: hash not found", ErrNotFound)
+	}
+	return h, nil
 }
 
 func (s *memoryStorage) StoreHashFields(_ context.Context, hash string, fields map[string][]byte) error {
@@ -110,8 +126,15 @@ func (s *memoryStorage) DeleteHashFields(_ context.Context, hash string, fields 
 	s.hashStorageMutex.Lock()
 	defer s.hashStorageMutex.Unlock()
 
+	if _, ok := s.hashStorage[hash]; !ok {
+		return fmt.Errorf("%w: hash not found", ErrNotFound)
+	}
 	for _, field := range fields {
 		delete(s.hashStorage[hash], field)
 	}
+	return nil
+}
+
+func (s *memoryStorage) Close() error {
 	return nil
 }

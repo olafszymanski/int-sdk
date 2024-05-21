@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-var ErrNotFound = fmt.Errorf("key not found")
+var ErrNotFound = fmt.Errorf("not found")
 
 type Storager interface {
 	Get(ctx context.Context, key string) ([]byte, error)
@@ -17,4 +17,5 @@ type Storager interface {
 	GetHashFields(ctx context.Context, hash string) (map[string][]byte, error)
 	StoreHashFields(ctx context.Context, hash string, fields map[string][]byte) error
 	DeleteHashFields(ctx context.Context, hash string, fields []string) error
+	Close() error
 }

@@ -11,16 +11,19 @@ type redisStorage struct {
 	client *redis.Client
 }
 
-func NewRedisStorage(address string) Storager {
-	// TODO: fix options
+func NewRedisStorage(ctx context.Context, address, password string) (Storager, error) {
 	c := redis.NewClient(&redis.Options{
 		Addr:     address,
-		Password: "",
+		Password: password,
 		DB:       0,
 	})
+	_, err := c.Ping(ctx).Result()
+	if err != nil {
+		return nil, err
+	}
 	return &redisStorage{
 		client: c,
-	}
+	}, nil
 }
 
 func (s *redisStorage) Get(ctx context.Context, key string) ([]byte, error) {
@@ -102,4 +105,8 @@ func (s *redisStorage) DeleteHashFields(ctx context.Context, hash string, fields
 		return err
 	}
 	return nil
+}
+
+func (s *redisStorage) Close() error {
+	return s.Close()
 }
