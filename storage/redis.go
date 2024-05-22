@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -17,8 +18,7 @@ func NewRedisStorage(ctx context.Context, address, password string) (Storager, e
 		Password: password,
 		DB:       0,
 	})
-	_, err := c.Ping(ctx).Result()
-	if err != nil {
+	if _, err := c.Ping(ctx).Result(); err != nil {
 		return nil, err
 	}
 	return &redisStorage{
@@ -30,7 +30,7 @@ func (s *redisStorage) Get(ctx context.Context, key string) ([]byte, error) {
 	r, err := s.client.Get(ctx, key).Bytes()
 	if err != nil {
 		if err == redis.Nil {
-			return nil, ErrNotFound
+			return nil, fmt.Errorf("%w: key not found", ErrNotFound)
 		}
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (s *redisStorage) GetHashField(ctx context.Context, hash, field string) ([]
 	r, err := s.client.HGet(ctx, hash, field).Bytes()
 	if err != nil {
 		if err == redis.Nil {
-			return nil, ErrNotFound
+			return nil, fmt.Errorf("%w: hash not found", ErrNotFound)
 		}
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (s *redisStorage) GetHashFieldKeys(ctx context.Context, hash string) ([]str
 	res, err := s.client.HKeys(ctx, hash).Result()
 	if err != nil {
 		if err == redis.Nil {
-			return nil, ErrNotFound
+			return nil, fmt.Errorf("%w: hash not found", ErrNotFound)
 		}
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func (s *redisStorage) GetHashFields(ctx context.Context, hash string) (map[stri
 	res, err := s.client.HGetAll(ctx, hash).Result()
 	if err != nil {
 		if err == redis.Nil {
-			return nil, ErrNotFound
+			return nil, fmt.Errorf("%w: hash not found", ErrNotFound)
 		}
 		return nil, err
 	}
@@ -102,11 +102,14 @@ func (s *redisStorage) StoreHashFields(ctx context.Context, hash string, fields 
 func (s *redisStorage) DeleteHashFields(ctx context.Context, hash string, fields []string) error {
 	_, err := s.client.HDel(ctx, hash, fields...).Result()
 	if err != nil {
+		if err == redis.Nil {
+			return fmt.Errorf("%w: hash not found", ErrNotFound)
+		}
 		return err
 	}
 	return nil
 }
 
 func (s *redisStorage) Close() error {
-	return s.Close()
+	return s.client.Close()
 }
