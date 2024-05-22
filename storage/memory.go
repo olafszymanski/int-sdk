@@ -8,7 +8,7 @@ import (
 )
 
 type item struct {
-	value []byte
+	value any
 	ttl   int64
 }
 
@@ -16,7 +16,7 @@ type memoryStorage struct {
 	storageMutex     sync.RWMutex
 	storage          map[string]*item
 	hashStorageMutex sync.RWMutex
-	hashStorage      map[string]map[string][]byte
+	hashStorage      map[string]map[string]any
 }
 
 func NewMemoryStorage() Storager {
@@ -24,11 +24,11 @@ func NewMemoryStorage() Storager {
 		storageMutex:     sync.RWMutex{},
 		storage:          make(map[string]*item),
 		hashStorageMutex: sync.RWMutex{},
-		hashStorage:      make(map[string]map[string][]byte),
+		hashStorage:      make(map[string]map[string]any),
 	}
 }
 
-func (s *memoryStorage) Get(_ context.Context, key string) ([]byte, error) {
+func (s *memoryStorage) Get(_ context.Context, key string) (any, error) {
 	s.storageMutex.RLock()
 	defer s.storageMutex.RUnlock()
 
@@ -43,7 +43,7 @@ func (s *memoryStorage) Get(_ context.Context, key string) ([]byte, error) {
 }
 
 // If expiration is 0, the key will not expire.
-func (s *memoryStorage) Store(_ context.Context, key string, value []byte, expiration time.Duration) error {
+func (s *memoryStorage) Store(_ context.Context, key string, value any, expiration time.Duration) error {
 	s.storageMutex.Lock()
 	defer s.storageMutex.Unlock()
 
@@ -58,7 +58,7 @@ func (s *memoryStorage) Store(_ context.Context, key string, value []byte, expir
 	return nil
 }
 
-func (s *memoryStorage) GetHashField(_ context.Context, hash, field string) ([]byte, error) {
+func (s *memoryStorage) GetHashField(_ context.Context, hash, field string) (any, error) {
 	s.hashStorageMutex.RLock()
 	defer s.hashStorageMutex.RUnlock()
 
@@ -81,24 +81,24 @@ func (s *memoryStorage) GetHashFieldKeys(_ context.Context, hash string) ([]stri
 		return nil, fmt.Errorf("%w: hash not found", ErrNotFound)
 	}
 	keys := make([]string, 0, len(h))
-	for k := range h[hash] {
+	for k := range h {
 		keys = append(keys, fmt.Sprint(k))
 	}
 	return keys, nil
 }
 
-func (s *memoryStorage) StoreHashField(_ context.Context, hash string, field string, value []byte) error {
+func (s *memoryStorage) StoreHashField(_ context.Context, hash string, field string, value any) error {
 	s.hashStorageMutex.Lock()
 	defer s.hashStorageMutex.Unlock()
 
 	if _, ok := s.hashStorage[hash]; !ok {
-		s.hashStorage[hash] = make(map[string][]byte, 1)
+		s.hashStorage[hash] = make(map[string]any, 1)
 	}
 	s.hashStorage[hash][field] = value
 	return nil
 }
 
-func (s *memoryStorage) GetHashFields(_ context.Context, hash string) (map[string][]byte, error) {
+func (s *memoryStorage) GetHashFields(_ context.Context, hash string) (map[string]any, error) {
 	s.hashStorageMutex.RLock()
 	defer s.hashStorageMutex.RUnlock()
 
@@ -109,12 +109,12 @@ func (s *memoryStorage) GetHashFields(_ context.Context, hash string) (map[strin
 	return h, nil
 }
 
-func (s *memoryStorage) StoreHashFields(_ context.Context, hash string, fields map[string][]byte) error {
+func (s *memoryStorage) StoreHashFields(_ context.Context, hash string, fields map[string]any) error {
 	s.hashStorageMutex.Lock()
 	defer s.hashStorageMutex.Unlock()
 
 	if _, ok := s.hashStorage[hash]; !ok {
-		s.hashStorage[hash] = make(map[string][]byte, len(fields))
+		s.hashStorage[hash] = make(map[string]any, len(fields))
 	}
 	for k, v := range fields {
 		s.hashStorage[hash][k] = v

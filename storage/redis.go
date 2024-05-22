@@ -26,7 +26,7 @@ func NewRedisStorage(ctx context.Context, address, password string) (Storager, e
 	}, nil
 }
 
-func (s *redisStorage) Get(ctx context.Context, key string) ([]byte, error) {
+func (s *redisStorage) Get(ctx context.Context, key string) (any, error) {
 	r, err := s.client.Get(ctx, key).Bytes()
 	if err != nil {
 		if err == redis.Nil {
@@ -38,7 +38,7 @@ func (s *redisStorage) Get(ctx context.Context, key string) ([]byte, error) {
 }
 
 // If expiration is 0, the key will not expire.
-func (s *redisStorage) Store(ctx context.Context, key string, value []byte, expiration time.Duration) error {
+func (s *redisStorage) Store(ctx context.Context, key string, value any, expiration time.Duration) error {
 	_, err := s.client.Set(ctx, key, value, expiration).Result()
 	if err != nil {
 		return err
@@ -46,7 +46,7 @@ func (s *redisStorage) Store(ctx context.Context, key string, value []byte, expi
 	return nil
 }
 
-func (s *redisStorage) GetHashField(ctx context.Context, hash, field string) ([]byte, error) {
+func (s *redisStorage) GetHashField(ctx context.Context, hash, field string) (any, error) {
 	r, err := s.client.HGet(ctx, hash, field).Bytes()
 	if err != nil {
 		if err == redis.Nil {
@@ -68,7 +68,7 @@ func (s *redisStorage) GetHashFieldKeys(ctx context.Context, hash string) ([]str
 	return res, nil
 }
 
-func (s *redisStorage) StoreHashField(ctx context.Context, hash string, field string, value []byte) error {
+func (s *redisStorage) StoreHashField(ctx context.Context, hash string, field string, value any) error {
 	_, err := s.client.HSet(ctx, hash, field, value).Result()
 	if err != nil {
 		return err
@@ -76,7 +76,7 @@ func (s *redisStorage) StoreHashField(ctx context.Context, hash string, field st
 	return nil
 }
 
-func (s *redisStorage) GetHashFields(ctx context.Context, hash string) (map[string][]byte, error) {
+func (s *redisStorage) GetHashFields(ctx context.Context, hash string) (map[string]any, error) {
 	res, err := s.client.HGetAll(ctx, hash).Result()
 	if err != nil {
 		if err == redis.Nil {
@@ -84,14 +84,14 @@ func (s *redisStorage) GetHashFields(ctx context.Context, hash string) (map[stri
 		}
 		return nil, err
 	}
-	r := make(map[string][]byte, len(res))
+	r := make(map[string]any, len(res))
 	for k, v := range res {
-		r[k] = []byte(v)
+		r[k] = any(v)
 	}
 	return r, nil
 }
 
-func (s *redisStorage) StoreHashFields(ctx context.Context, hash string, fields map[string][]byte) error {
+func (s *redisStorage) StoreHashFields(ctx context.Context, hash string, fields map[string]any) error {
 	_, err := s.client.HSet(ctx, hash, fields).Result()
 	if err != nil {
 		return err
