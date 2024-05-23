@@ -13,24 +13,24 @@ type item struct {
 }
 
 type memoryStorage struct {
-	storageMutex     sync.RWMutex
-	storage          map[string]*item
-	hashStorageMutex sync.RWMutex
-	hashStorage      map[string]map[string]any
+	storageLock    sync.RWMutex
+	storage        map[string]*item
+	mapStorageLock sync.RWMutex
+	mapStorage     map[string]map[string]any
 }
 
 func NewMemoryStorage() Storager {
 	return &memoryStorage{
-		storageMutex:     sync.RWMutex{},
-		storage:          make(map[string]*item),
-		hashStorageMutex: sync.RWMutex{},
-		hashStorage:      make(map[string]map[string]any),
+		storageLock:    sync.RWMutex{},
+		storage:        make(map[string]*item),
+		mapStorageLock: sync.RWMutex{},
+		mapStorage:     make(map[string]map[string]any),
 	}
 }
 
-func (s *memoryStorage) Get(_ context.Context, key string) (any, error) {
-	s.storageMutex.RLock()
-	defer s.storageMutex.RUnlock()
+func (s *memoryStorage) Get(_ context.Context, key string) ([]byte, error) {
+	s.storageLock.RLock()
+	defer s.storageLock.RUnlock()
 
 	v, ok := s.storage[key]
 	if !ok {
@@ -39,13 +39,57 @@ func (s *memoryStorage) Get(_ context.Context, key string) (any, error) {
 	if time.Now().Unix() < v.ttl {
 		delete(s.storage, key)
 	}
-	return v.value, nil
+	return v.value.([]byte), nil
+}
+
+func (s *memoryStorage) GetMapValue(_ context.Context, hash, key string) ([]byte, error) {
+	s.mapStorageLock.RLock()
+	defer s.mapStorageLock.RUnlock()
+
+	h, ok := s.mapStorage[hash]
+	if !ok {
+		return nil, ErrNotFound
+	}
+	if v, ok := h[key]; ok {
+		return v.([]byte), nil
+	}
+	return nil, fmt.Errorf("%w: field not found", ErrNotFound)
+}
+
+func (s *memoryStorage) GetMapValues(_ context.Context, hash string) (map[string][]byte, error) {
+	s.mapStorageLock.RLock()
+	defer s.mapStorageLock.RUnlock()
+
+	h, ok := s.mapStorage[hash]
+	if !ok {
+		return nil, ErrNotFound
+	}
+	res := make(map[string][]byte, len(h))
+	for k, v := range h {
+		res[k] = v.([]byte)
+	}
+	return res, nil
+}
+
+func (s *memoryStorage) GetMapKeys(_ context.Context, hash string) ([]string, error) {
+	s.mapStorageLock.RLock()
+	defer s.mapStorageLock.RUnlock()
+
+	h, ok := s.mapStorage[hash]
+	if !ok {
+		return nil, ErrNotFound
+	}
+	keys := make([]string, 0, len(h))
+	for k := range h {
+		keys = append(keys, fmt.Sprint(k))
+	}
+	return keys, nil
 }
 
 // If expiration is 0, the key will not expire.
-func (s *memoryStorage) Store(_ context.Context, key string, value any, expiration time.Duration) error {
-	s.storageMutex.Lock()
-	defer s.storageMutex.Unlock()
+func (s *memoryStorage) Set(_ context.Context, key string, value any, expiration time.Duration) error {
+	s.storageLock.Lock()
+	defer s.storageLock.Unlock()
 
 	var ttl int64 = -1
 	if expiration != 0 {
@@ -58,79 +102,39 @@ func (s *memoryStorage) Store(_ context.Context, key string, value any, expirati
 	return nil
 }
 
-func (s *memoryStorage) GetHashField(_ context.Context, hash, field string) (any, error) {
-	s.hashStorageMutex.RLock()
-	defer s.hashStorageMutex.RUnlock()
+func (s *memoryStorage) SetMapValue(_ context.Context, hash string, key string, value any) error {
+	s.mapStorageLock.Lock()
+	defer s.mapStorageLock.Unlock()
 
-	h, ok := s.hashStorage[hash]
-	if !ok {
-		return nil, fmt.Errorf("%w: hash not found", ErrNotFound)
+	if _, ok := s.mapStorage[hash]; !ok {
+		s.mapStorage[hash] = make(map[string]any, 1)
 	}
-	if f, ok := h[field]; ok {
-		return f, nil
-	}
-	return nil, fmt.Errorf("%w: field not found", ErrNotFound)
-}
-
-func (s *memoryStorage) GetHashFieldKeys(_ context.Context, hash string) ([]string, error) {
-	s.hashStorageMutex.RLock()
-	defer s.hashStorageMutex.RUnlock()
-
-	h, ok := s.hashStorage[hash]
-	if !ok {
-		return nil, fmt.Errorf("%w: hash not found", ErrNotFound)
-	}
-	keys := make([]string, 0, len(h))
-	for k := range h {
-		keys = append(keys, fmt.Sprint(k))
-	}
-	return keys, nil
-}
-
-func (s *memoryStorage) StoreHashField(_ context.Context, hash string, field string, value any) error {
-	s.hashStorageMutex.Lock()
-	defer s.hashStorageMutex.Unlock()
-
-	if _, ok := s.hashStorage[hash]; !ok {
-		s.hashStorage[hash] = make(map[string]any, 1)
-	}
-	s.hashStorage[hash][field] = value
+	s.mapStorage[hash][key] = value
 	return nil
 }
 
-func (s *memoryStorage) GetHashFields(_ context.Context, hash string) (map[string]any, error) {
-	s.hashStorageMutex.RLock()
-	defer s.hashStorageMutex.RUnlock()
+func (s *memoryStorage) SetMapValues(_ context.Context, hash string, values map[string]any) error {
+	s.mapStorageLock.Lock()
+	defer s.mapStorageLock.Unlock()
 
-	h, ok := s.hashStorage[hash]
-	if !ok {
-		return nil, fmt.Errorf("%w: hash not found", ErrNotFound)
+	if _, ok := s.mapStorage[hash]; !ok {
+		s.mapStorage[hash] = make(map[string]any, len(values))
 	}
-	return h, nil
-}
-
-func (s *memoryStorage) StoreHashFields(_ context.Context, hash string, fields map[string]any) error {
-	s.hashStorageMutex.Lock()
-	defer s.hashStorageMutex.Unlock()
-
-	if _, ok := s.hashStorage[hash]; !ok {
-		s.hashStorage[hash] = make(map[string]any, len(fields))
-	}
-	for k, v := range fields {
-		s.hashStorage[hash][k] = v
+	for k, v := range values {
+		s.mapStorage[hash][k] = v
 	}
 	return nil
 }
 
-func (s *memoryStorage) DeleteHashFields(_ context.Context, hash string, fields []string) error {
-	s.hashStorageMutex.Lock()
-	defer s.hashStorageMutex.Unlock()
+func (s *memoryStorage) DeleteMapKeys(_ context.Context, hash string, keys []string) error {
+	s.mapStorageLock.Lock()
+	defer s.mapStorageLock.Unlock()
 
-	if _, ok := s.hashStorage[hash]; !ok {
-		return fmt.Errorf("%w: hash not found", ErrNotFound)
+	if _, ok := s.mapStorage[hash]; !ok {
+		return ErrNotFound
 	}
-	for _, field := range fields {
-		delete(s.hashStorage[hash], field)
+	for _, field := range keys {
+		delete(s.mapStorage[hash], field)
 	}
 	return nil
 }
